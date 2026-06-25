@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { ImageMetadata } from '../types';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDcxtO1P8d553SNPPPCQnl1uyGqJrtyYrU';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 interface MapViewProps {
   images: ImageMetadata[];

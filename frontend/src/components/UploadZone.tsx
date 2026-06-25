@@ -46,9 +46,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, onError
 
   const uploadFile = (file: File) => {
     const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    const allowed = ['.jpg', '.jpeg', '.png', '.tiff', '.tif'];
+    const allowed = ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.webp'];
     if (!allowed.includes(ext)) {
-      onError(`Unsupported file format. Supported formats: JPG, PNG, TIFF`);
+      onError(`Unsupported file format. Supported formats: JPG, PNG, TIFF, WEBP`);
       return;
     }
 
@@ -109,7 +109,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, onError
         type="file"
         className="hidden-file-input"
         style={{ display: 'none' }}
-        accept=".jpg,.jpeg,.png,.tiff,.tif"
+        accept=".jpg,.jpeg,.png,.tiff,.tif,.webp"
         onChange={handleChange}
         disabled={uploading}
       />
@@ -130,7 +130,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, onError
         <>
           <Upload className="upload-icon" />
           <div className="upload-title">Drag & drop your image here</div>
-          <div className="upload-subtitle">Supports JPG, PNG, and TIFF up to 20MB</div>
+          <div className="upload-subtitle">Supports JPG, PNG, TIFF, and WEBP up to 20MB</div>
           <div className="btn btn-secondary" style={{ marginTop: '1rem' }}>
             <ImageIcon size={16} /> Choose File
           </div>

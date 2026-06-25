@@ -80,7 +80,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Mount uploads directory to serve images statically
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"}
 
 @app.post("/api/upload", response_model=ImageMetadataResponse, status_code=status.HTTP_201_CREATED)
 async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
