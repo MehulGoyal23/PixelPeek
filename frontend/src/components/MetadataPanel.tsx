@@ -171,6 +171,12 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, on
                 {analysis.status === 'suspected' && "Abnormally high LSB entropy. Encrypted payload suspected."}
                 {analysis.status === 'detected' && `Concatenated trailing data found after EOF (${analysis.trailing_data.length} bytes).`}
               </div>
+              {analysis.mitre_mappings && analysis.mitre_mappings.length > 0 && (
+                <div className="banner-mitre-badge">
+                  <Shield size={11} />
+                  <span>{analysis.mitre_mappings.length} ATT&CK technique{analysis.mitre_mappings.length !== 1 ? 's' : ''} mapped</span>
+                </div>
+              )}
             </div>
             {(analysis.status === 'suspected' || analysis.status === 'detected') && (
               <button 

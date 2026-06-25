@@ -15,6 +15,7 @@ from .models import ImageMetadata
 from .schemas import ImageMetadataResponse, StegoDecodeRequest
 from .exif_utils import extract_exif
 from .stego_utils import scan_trailing_data, analyze_entropy, decode_lsb
+from .attack_mapper import map_to_mitre
 
 # Create SQLite parent directories if needed
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite:///"):
@@ -333,12 +334,20 @@ def analyze_image_steganography(image_id: int, db: Session = Depends(get_db)):
         status_str = "detected"
     elif has_stego_suspected:
         status_str = "suspected"
+
+    # Build analysis result for MITRE mapping
+    analysis_result = {
+        "trailing_data": trailing_result,
+        "entropy": entropy_result
+    }
+    mitre_mappings = map_to_mitre(analysis_result)
         
     return {
         "image_id": image_id,
         "status": status_str,
         "trailing_data": trailing_result,
-        "entropy": entropy_result
+        "entropy": entropy_result,
+        "mitre_mappings": mitre_mappings
     }
 
 @app.post("/api/images/{image_id}/stego/decode")

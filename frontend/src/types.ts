@@ -45,11 +45,21 @@ export interface StegoTrailingDataResult {
   is_text: boolean;
 }
 
+export interface MitreAttackMapping {
+  id: string;
+  name: string;
+  tactic: string;
+  confidence: 'Low' | 'Medium' | 'High';
+  url: string;
+  description: string;
+}
+
 export interface StegoAnalysisResponse {
   image_id: number;
   status: 'clean' | 'suspected' | 'detected';
   trailing_data: StegoTrailingDataResult;
   entropy: StegoEntropyResult;
+  mitre_mappings: MitreAttackMapping[];
 }
 
 export interface StegoDecodeRequest {

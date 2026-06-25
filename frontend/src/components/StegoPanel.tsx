@@ -4,6 +4,7 @@ import {
   Download, Copy, Activity, HelpCircle, Loader2, Check 
 } from 'lucide-react';
 import { ImageMetadata, StegoAnalysisResponse, StegoDecodeResponse } from '../types';
+import { MitrePanel } from './MitrePanel';
 
 interface StegoPanelProps {
   image: ImageMetadata;
@@ -155,12 +156,16 @@ export const StegoPanel: React.FC<StegoPanelProps> = ({ image, analysis, onClose
             </div>
           </div>
 
-          {/* Show trailing preview if text */}
           {isTrailingDetected && analysis.trailing_data.is_text && analysis.trailing_data.preview && (
             <div className="stego-preview-box">
               <span className="preview-label">Appended Text Preview:</span>
               <pre className="preview-content">{analysis.trailing_data.preview}</pre>
             </div>
+          )}
+
+          {/* MITRE ATT&CK Mappings */}
+          {analysis.mitre_mappings && analysis.mitre_mappings.length > 0 && (
+            <MitrePanel mappings={analysis.mitre_mappings} />
           )}
         </div>
       )}

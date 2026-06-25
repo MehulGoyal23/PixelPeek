@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 class ImageMetadataBase(BaseModel):
     filename: str
@@ -35,4 +35,13 @@ class StegoDecodeRequest(BaseModel):
     channels: Optional[str] = "RGB"
     num_bits: Optional[int] = 1
     stop_marker: Optional[str] = None
+
+class MitreAttackMapping(BaseModel):
+    id: str
+    name: str
+    tactic: str
+    confidence: str  # "Low", "Medium", "High"
+    url: str
+    description: str
+
 
