@@ -19,6 +19,8 @@ class ImageMetadataBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     altitude: Optional[float] = None
+    stego_status: Optional[str] = None
+    mitre_count: Optional[int] = 0
 
 class ImageMetadataCreate(ImageMetadataBase):
     pass

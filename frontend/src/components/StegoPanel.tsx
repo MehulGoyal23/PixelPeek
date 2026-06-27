@@ -123,18 +123,24 @@ export const StegoPanel: React.FC<StegoPanelProps> = ({ image, analysis, onClose
   const isEntropySuspected = analysis?.entropy.suspected;
 
   return (
-    <div className="glass-panel meta-panel stego-panel">
-      {/* Header */}
-      <div className="panel-header">
-        <div className="panel-title-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button onClick={onClose} className="btn-icon-back" aria-label="Go back to metadata">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="panel-title">Stego Decrypter</div>
-            <div className="panel-subtitle">{image.filename}</div>
-          </div>
-        </div>
+    <div className="detail-content animate-fade-in">
+      {/* Back Header & Threat Indicator */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <button 
+          onClick={onClose} 
+          className="btn btn-secondary btn-sm" 
+          aria-label="Go back to metadata"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+        >
+          <ArrowLeft size={12} /> Back
+        </button>
+        <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          DEC DECRYPTER // STATUS: {analysis?.status.toUpperCase() || 'UNKNOWN'}
+        </span>
+      </div>
+
+      <div className="threat-level-bar">
+        <div className={`threat-level-fill ${analysis?.status || 'clean'}`}></div>
       </div>
 
       {/* Analysis Reports */}

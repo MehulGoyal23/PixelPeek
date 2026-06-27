@@ -16,6 +16,8 @@ export interface ImageMetadata {
   latitude: number | null;
   longitude: number | null;
   altitude: number | null;
+  stego_status?: string | null;
+  mitre_count?: number;
   created_at: string;
 }
 

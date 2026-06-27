@@ -5,29 +5,46 @@ from PIL.ExifTags import TAGS, GPSTAGS
 def convert_to_degrees(value):
     """
     Helper function to convert GPS coordinates stored in degrees, minutes, and seconds
-    to float decimal degrees.
+    to float decimal degrees. Returns None if invalid or containing NaN.
     """
+    import math
+    if not value or not isinstance(value, (list, tuple)) or len(value) == 0:
+        return None
+        
     d, m, s = 0.0, 0.0, 0.0
     
     def to_float(val):
-        if hasattr(val, 'numerator') and hasattr(val, 'denominator') and val.denominator != 0:
+        if hasattr(val, 'numerator') and hasattr(val, 'denominator'):
+            if val.denominator == 0:
+                raise ValueError("Division by zero in rational")
             return float(val.numerator) / float(val.denominator)
-        elif isinstance(val, tuple) and len(val) == 2 and val[1] != 0:
+        elif isinstance(val, tuple) and len(val) == 2:
+            if val[1] == 0:
+                raise ValueError("Division by zero in tuple rational")
             return float(val[0]) / float(val[1])
         else:
-            try:
-                return float(val)
-            except Exception:
-                return 0.0
+            f = float(val)
+            if math.isnan(f):
+                raise ValueError("NaN value")
+            return f
                 
-    if len(value) >= 1:
-        d = to_float(value[0])
-    if len(value) >= 2:
-        m = to_float(value[1])
-    if len(value) >= 3:
-        s = to_float(value[2])
-        
-    return d + (m / 60.0) + (s / 3600.0)
+    try:
+        if len(value) >= 1:
+            d = to_float(value[0])
+        if len(value) >= 2:
+            m = to_float(value[1])
+        if len(value) >= 3:
+            s = to_float(value[2])
+            
+        if math.isnan(d) or math.isnan(m) or math.isnan(s):
+            return None
+            
+        res = d + (m / 60.0) + (s / 3600.0)
+        if math.isnan(res):
+            return None
+        return res
+    except Exception:
+        return None
 
 def extract_exif(image_path: str) -> dict:
     """
@@ -193,18 +210,24 @@ def extract_exif(image_path: str) -> dict:
                     lon_val = resolved_gps.get("GPSLongitude")
                     
                     if lat_val and lat_ref:
-                        metadata["latitude"] = convert_to_degrees(lat_val)
-                        if isinstance(lat_ref, bytes):
-                            lat_ref = lat_ref.decode()
-                        if lat_ref.strip().upper() == 'S':
-                            metadata["latitude"] = -metadata["latitude"]
+                        lat_ref_str = lat_ref.decode() if isinstance(lat_ref, bytes) else str(lat_ref)
+                        lat_ref_clean = lat_ref_str.strip().upper()
+                        if lat_ref_clean in ('N', 'S'):
+                            lat_degrees = convert_to_degrees(lat_val)
+                            if lat_degrees is not None:
+                                if lat_ref_clean == 'S':
+                                    lat_degrees = -lat_degrees
+                                metadata["latitude"] = lat_degrees
                             
                     if lon_val and lon_ref:
-                        metadata["longitude"] = convert_to_degrees(lon_val)
-                        if isinstance(lon_ref, bytes):
-                            lon_ref = lon_ref.decode()
-                        if lon_ref.strip().upper() == 'W':
-                            metadata["longitude"] = -metadata["longitude"]
+                        lon_ref_str = lon_ref.decode() if isinstance(lon_ref, bytes) else str(lon_ref)
+                        lon_ref_clean = lon_ref_str.strip().upper()
+                        if lon_ref_clean in ('E', 'W'):
+                            lon_degrees = convert_to_degrees(lon_val)
+                            if lon_degrees is not None:
+                                if lon_ref_clean == 'W':
+                                    lon_degrees = -lon_degrees
+                                metadata["longitude"] = lon_degrees
                             
                     # Altitude
                     alt_val = resolved_gps.get("GPSAltitude")
@@ -221,12 +244,19 @@ def extract_exif(image_path: str) -> dict:
                                 alt = None
                                 
                         if alt is not None:
-                            if alt_ref is not None:
-                                if isinstance(alt_ref, bytes):
-                                    alt_ref = int.from_bytes(alt_ref, 'big')
-                                if int(alt_ref) == 1:  # Below sea level
-                                    alt = -alt
-                            metadata["altitude"] = round(alt, 2)
+                            import math
+                            if math.isnan(alt):
+                                alt = None
+                            else:
+                                if alt_ref is not None:
+                                    if isinstance(alt_ref, bytes):
+                                        alt_ref = int.from_bytes(alt_ref, 'big')
+                                    try:
+                                        if int(alt_ref) == 1:  # Below sea level
+                                            alt = -alt
+                                    except Exception:
+                                        pass
+                                metadata["altitude"] = round(alt, 2)
     except Exception as e:
         print(f"Error parsing EXIF: {e}")
         

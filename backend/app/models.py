@@ -27,4 +27,8 @@ class ImageMetadata(Base):
     longitude = Column(Float, nullable=True)
     altitude = Column(Float, nullable=True)
     
+    # Stego details
+    stego_status = Column(String, index=True, nullable=True)
+    mitre_count = Column(Integer, default=0, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

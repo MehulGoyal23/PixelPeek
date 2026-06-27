@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Camera, Download, FileText, AlertCircle, CheckCircle2 
+  Camera, Download, FileText, AlertCircle, CheckCircle2,
+  FolderOpen, MapPin, ShieldAlert, Crosshair, Terminal
 } from 'lucide-react';
 import { ImageMetadata, FilterParams, StegoAnalysisResponse } from './types';
 import { UploadZone } from './components/UploadZone';
@@ -135,7 +136,6 @@ function App() {
   };
 
   const handleApiDocsClick = () => {
-    // Use relative path — works in both dev (proxied) and Docker (nginx reverse proxy)
     window.open('/docs', '_blank');
   };
 
@@ -152,77 +152,83 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="brand">
-          <span className="brand-logo">📸</span>
-          <h1 className="brand-title">EXIF Image Finder</h1>
+          <span className="brand-logo"><Terminal size={20} className="text-green animate-pulse" /></span>
+          <h1 className="brand-title">PixelPeek</h1>
+          <span className="brand-tagline">Image Forensics & Steganography Platform</span>
         </div>
         
         <div className="header-actions">
-          <button className="btn btn-secondary" onClick={handleApiDocsClick}>
+          <button className="btn btn-secondary" onClick={handleApiDocsClick} title="API Documentation">
             <FileText size={16} /> API Docs
           </button>
           <button 
             className="btn btn-primary" 
             onClick={handleExportCsv}
             disabled={images.length === 0}
+            title="Export metadata as CSV"
           >
             <Download size={16} /> Export CSV
           </button>
         </div>
       </header>
 
-      {/* Dashboard Layout */}
-      <div className="dashboard-grid">
-        {/* Sidebar Controls */}
-        <aside className="sidebar">
-          <UploadZone 
-            onUploadSuccess={handleUploadSuccess} 
-            onError={(msg) => showToast(msg, "error")} 
-          />
-          <SearchFilters 
-            filters={filters} 
-            setFilters={setFilters} 
-            cameraModels={cameraModels} 
-            onReset={handleResetFilters} 
-          />
-        </aside>
+      {/* Stats Bar */}
+      <div className="stats-bar">
+        <div className="stat-item">
+          <FolderOpen size={14} />
+          <span>ANALYZED:</span>
+          <span className="stat-value">{images.length}</span>
+        </div>
+        <div className="stat-item">
+          <MapPin size={14} />
+          <span>GPS LOCATIONS:</span>
+          <span className="stat-value">
+            {images.filter(img => img.latitude !== null && img.longitude !== null).length}
+          </span>
+        </div>
+        <div className="stat-item">
+          <ShieldAlert size={14} />
+          <span>THREATS DETECTED:</span>
+          <span className="stat-value">
+            {images.filter(img => img.stego_status === 'detected' || img.stego_status === 'suspected').length}
+          </span>
+        </div>
+        <div className="stat-item">
+          <Crosshair size={14} />
+          <span>ATT&CK TECHNIQUES:</span>
+          <span className="stat-value">
+            {images.reduce((sum, img) => sum + (img.mitre_count || 0), 0)}
+          </span>
+        </div>
+      </div>
 
-        {/* Main Work Area */}
-        <main className="main-content">
-          {/* Selected Details Section */}
-          {selectedImage && (
-            <div className="detail-panel-grid">
-              {isStegoView ? (
-                <StegoPanel 
-                  image={selectedImage} 
-                  analysis={stegoAnalysis} 
-                  onClose={() => setIsStegoView(false)} 
-                />
-              ) : (
-                <MetadataPanel 
-                  image={selectedImage} 
-                  onClose={() => setSelectedImage(null)} 
-                  onOpenStego={handleOpenStego}
-                />
-              )}
-              <MapView 
-                images={images} 
-                selectedImage={selectedImage} 
-                onSelectImage={setSelectedImage} 
-              />
-            </div>
-          )}
+      {/* Top Controls (Upload Zone + Inline Filters) */}
+      <div className="top-controls">
+        <UploadZone 
+          onUploadSuccess={handleUploadSuccess} 
+          onError={(msg) => showToast(msg, "error")} 
+        />
+        <SearchFilters 
+          filters={filters} 
+          setFilters={setFilters} 
+          cameraModels={cameraModels} 
+          onReset={handleResetFilters} 
+        />
+      </div>
 
-          {/* Gallery / Image Grid */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <div className="grid-header" style={{ marginBottom: '1.5rem' }}>
-              <h2 className="grid-title">
-                <Camera size={20} className="text-cyan-400" /> Image Gallery
-              </h2>
-              <span className="upload-subtitle" style={{ fontSize: '0.9rem' }}>
-                Showing {images.length} image{images.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            
+      {/* Main 3-Column Work Area */}
+      <div className="main-grid">
+        {/* Column 1: Image Gallery */}
+        <div className="column-gallery">
+          <div className="column-header">
+            <h2 className="column-title">
+              <Camera size={14} /> Image Gallery
+            </h2>
+            <span className="column-badge">
+              {images.length} items
+            </span>
+          </div>
+          <div className="gallery-scroll">
             <ImageGrid 
               images={images} 
               selectedImageId={selectedImage?.id ?? null} 
@@ -230,16 +236,61 @@ function App() {
               onDeleteImage={handleDeleteImage} 
             />
           </div>
+        </div>
 
-          {/* Map view of all pins when nothing is selected */}
-          {!selectedImage && images.some(img => img.latitude != null) && (
-            <MapView 
-              images={images} 
-              selectedImage={null} 
-              onSelectImage={setSelectedImage} 
-            />
+        {/* Column 2: Forensics Analysis Details */}
+        <div className="column-detail">
+          <div className="column-header">
+            <h2 className="column-title">
+              <Terminal size={14} /> Forensic Analysis
+            </h2>
+            {selectedImage && (
+              <span className="column-badge" style={{ textTransform: 'none' }}>
+                ID: #{selectedImage.id}
+              </span>
+            )}
+          </div>
+          
+          {selectedImage ? (
+            isStegoView ? (
+              <StegoPanel 
+                image={selectedImage} 
+                analysis={stegoAnalysis} 
+                onClose={() => setIsStegoView(false)} 
+              />
+            ) : (
+              <MetadataPanel 
+                image={selectedImage} 
+                onOpenStego={handleOpenStego}
+              />
+            )
+          ) : (
+            <div className="detail-empty">
+              <Terminal size={48} />
+              <p style={{ marginTop: '1rem', fontSize: '0.8rem', opacity: 0.6 }}>
+                SELECT AN IMAGE FROM THE GALLERY TO RUN FORENSICS
+              </p>
+            </div>
           )}
-        </main>
+        </div>
+
+        {/* Column 3: Geospatial Mapping */}
+        <div className="column-map">
+          <div className="column-header">
+            <h2 className="column-title">
+              <MapPin size={14} /> Geospatial Mapping
+            </h2>
+            <span className="column-badge">
+              {images.filter(img => img.latitude !== null).length} mapped
+            </span>
+          </div>
+          
+          <MapView 
+            images={images} 
+            selectedImage={selectedImage} 
+            onSelectImage={setSelectedImage} 
+          />
+        </div>
       </div>
     </div>
   );

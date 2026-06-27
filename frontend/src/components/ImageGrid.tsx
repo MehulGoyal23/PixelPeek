@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Trash2, Eye } from 'lucide-react';
+import { Trash2, Eye, Camera } from 'lucide-react';
 import { ImageMetadata } from '../types';
 
 interface ImageGridProps {
@@ -55,46 +55,54 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
           return (
             <div 
               key={img.id}
-              className={`glass-panel image-card ${selectedImageId === img.id ? 'selected' : ''}`}
+              className={`image-card ${selectedImageId === img.id ? 'selected' : ''}`}
               onClick={() => onSelectImage(img)}
             >
-              <div className="card-preview">
+              <div className="card-thumb">
                 <img 
                   src={img.filepath} 
                   alt={img.filename} 
-                  className="card-img" 
                   loading="lazy" 
                 />
                 
-                {hasGps && (
-                  <div className="card-gps-indicator" title="Contains GPS Location">
-                    <MapPin size={14} />
+                {img.stego_status && img.stego_status !== 'clean' ? (
+                  <div className="card-stego-badge threat" title={`Steganography Detected: ${img.stego_status.toUpperCase()}`}>
+                    ⚠️
+                  </div>
+                ) : (
+                  <div className="card-stego-badge clean" title="No Steganography Detected">
+                    ✓
                   </div>
                 )}
-                
-                <button
-                  className="btn btn-danger card-delete-btn"
-                  onClick={(e) => handleDelete(e, img.id)}
-                  title="Delete Image"
-                  aria-label={`Delete ${img.filename}`}
-                >
-                  <Trash2 size={14} />
-                </button>
               </div>
               
-              <div className="card-details">
+              <div className="card-info">
                 <div className="card-name" title={img.filename}>
                   {img.filename}
                 </div>
-                <div className="card-meta-row">
-                  <span className="card-camera" title={img.camera_model || 'Unknown Camera'}>
-                    {img.camera_model || 'Unknown Camera'}
+                <div className="card-meta">
+                  <span className="card-meta-tag" title={img.camera_model || 'Unknown Camera'}>
+                    <Camera size={10} />
+                    <span style={{ maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {img.camera_model || 'Unknown Camera'}
+                    </span>
                   </span>
-                  <span className="card-date">
-                    {formattedDate}
-                  </span>
+                  <span>•</span>
+                  <span>{formattedDate}</span>
+                  {hasGps && (
+                    <div className="card-gps-dot" title="Contains GPS coordinates"></div>
+                  )}
                 </div>
               </div>
+
+              <button
+                className="card-delete-btn"
+                onClick={(e) => handleDelete(e, img.id)}
+                title="Delete Image"
+                aria-label={`Delete ${img.filename}`}
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
           );
         })}

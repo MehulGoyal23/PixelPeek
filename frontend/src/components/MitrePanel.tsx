@@ -70,7 +70,7 @@ export const MitrePanel: React.FC<MitrePanelProps> = ({ mappings }) => {
                   const conf = CONFIDENCE_CONFIG[technique.confidence] || CONFIDENCE_CONFIG.Low;
 
                   return (
-                    <div key={technique.id} className="mitre-technique-card">
+                    <div key={technique.id} className="mitre-technique-card" style={{ borderLeftColor: config.color }}>
                       <div className="technique-card-header">
                         <div className="technique-id-group">
                           <span className="technique-id">{technique.id}</span>

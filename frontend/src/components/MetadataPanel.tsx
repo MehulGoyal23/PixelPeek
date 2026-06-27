@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Camera, Calendar, Image as ImageIcon, MapPin, 
-  Info, Maximize2, Compass, Cpu, X, Shield, ShieldAlert, ShieldCheck, Unlock, Loader2 
+  Info, Compass, Cpu, Shield, ShieldAlert, ShieldCheck, Unlock, Loader2, Sliders 
 } from 'lucide-react';
 import { ImageMetadata, StegoAnalysisResponse } from '../types';
 import { formatFileSize } from './ImageGrid';
 
 interface MetadataPanelProps {
   image: ImageMetadata | null;
-  onClose: () => void;
   onOpenStego: (analysis: StegoAnalysisResponse) => void;
 }
 
-export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, onOpenStego }) => {
+export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onOpenStego }) => {
   const [analysis, setAnalysis] = useState<StegoAnalysisResponse | null>(null);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
 
@@ -43,9 +42,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, on
 
   if (!image) {
     return (
-      <div className="glass-panel meta-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '320px', color: 'var(--text-muted)' }}>
-        <Info size={36} style={{ marginBottom: '1rem' }} />
-        <p style={{ fontSize: '0.95rem' }}>Select an image from the gallery to inspect EXIF metadata.</p>
+      <div className="detail-empty">
+        <Info size={48} />
+        <p style={{ marginTop: '1rem', fontSize: '0.8rem', opacity: 0.6 }}>
+          SELECT AN IMAGE FROM THE GALLERY TO INSPECT EXIF METADATA
+        </p>
       </div>
     );
   }
@@ -58,94 +59,17 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, on
       }) 
     : 'N/A';
 
-  const metadataItems = [
-    { 
-      label: 'Camera Make', 
-      value: image.camera_make || 'N/A', 
-      icon: <Cpu size={16} /> 
-    },
-    { 
-      label: 'Camera Model', 
-      value: image.camera_model || 'N/A', 
-      icon: <Camera size={16} /> 
-    },
-    { 
-      label: 'Date Taken', 
-      value: dateStr, 
-      icon: <Calendar size={16} /> 
-    },
-    { 
-      label: 'Resolution', 
-      value: resolution, 
-      icon: <Maximize2 size={16} /> 
-    },
-    { 
-      label: 'ISO Speed', 
-      value: image.iso ? `ISO ${image.iso}` : 'N/A', 
-      icon: <Info size={16} /> 
-    },
-    { 
-      label: 'Aperture', 
-      value: image.aperture ? `f/${image.aperture}` : 'N/A', 
-      icon: <Camera size={16} /> 
-    },
-    { 
-      label: 'Shutter Speed', 
-      value: image.shutter_speed || 'N/A', 
-      icon: <Info size={16} /> 
-    },
-    { 
-      label: 'Focal Length', 
-      value: image.focal_length ? `${image.focal_length} mm` : 'N/A', 
-      icon: <Camera size={16} /> 
-    },
-    { 
-      label: 'Latitude', 
-      value: image.latitude != null ? `${image.latitude.toFixed(6)}°` : 'N/A', 
-      icon: <MapPin size={16} /> 
-    },
-    { 
-      label: 'Longitude', 
-      value: image.longitude != null ? `${image.longitude.toFixed(6)}°` : 'N/A', 
-      icon: <MapPin size={16} /> 
-    },
-    { 
-      label: 'Altitude', 
-      value: image.altitude != null ? `${image.altitude.toFixed(1)} m` : 'N/A', 
-      icon: <Compass size={16} /> 
-    },
-    { 
-      label: 'File Size', 
-      value: formatFileSize(image.file_size), 
-      icon: <ImageIcon size={16} /> 
-    }
-  ];
-
   return (
-    <div className="glass-panel meta-panel">
-      {/* Header */}
-      <div className="panel-header">
-        <div className="panel-title-group">
-          <div className="panel-title" style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={image.filename}>
+    <div className="detail-content animate-fade-in">
+      {/* Image Preview */}
+      <div className="detail-preview">
+        <img src={image.filepath} alt={image.filename} />
+        <div className="detail-preview-overlay">
+          <div className="detail-filename" title={image.filename}>
             {image.filename}
           </div>
-          <div className="panel-subtitle">{image.file_type}</div>
+          <div className="detail-filetype">{image.file_type}</div>
         </div>
-        <button 
-          onClick={onClose}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: 'var(--text-muted)', 
-            cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '50%'
-          }}
-          className="close-panel-btn"
-          aria-label="Close details panel"
-        >
-          <X size={18} />
-        </button>
       </div>
 
       {/* Steganography Scanner Card */}
@@ -172,10 +96,15 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, on
                 {analysis.status === 'detected' && `Concatenated trailing data found after EOF (${analysis.trailing_data.length} bytes).`}
               </div>
               {analysis.mitre_mappings && analysis.mitre_mappings.length > 0 && (
-                <div className="banner-mitre-badge">
+                <button 
+                  className="banner-mitre-badge"
+                  onClick={() => onOpenStego(analysis)}
+                  style={{ border: 'none', cursor: 'pointer', textAlign: 'left', background: 'rgba(0, 255, 65, 0.12)' }}
+                  title="View MITRE ATT&CK techniques mapping"
+                >
                   <Shield size={11} />
                   <span>{analysis.mitre_mappings.length} ATT&CK technique{analysis.mitre_mappings.length !== 1 ? 's' : ''} mapped</span>
-                </div>
+                </button>
               )}
             </div>
             {(analysis.status === 'suspected' || analysis.status === 'detected') && (
@@ -194,19 +123,148 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ image, onClose, on
         )}
       </div>
 
-      {/* Grid */}
-      <div className="meta-grid">
-        {metadataItems.map((item, idx) => (
-          <div className="meta-item" key={idx}>
-            <div className="meta-item-icon">
-              {item.icon}
-            </div>
+      {/* 1. Camera Info */}
+      <div className="meta-section">
+        <h4 className="meta-section-title">
+          <Cpu size={12} /> Camera Info
+        </h4>
+        <div className="meta-grid">
+          <div className="meta-item">
+            <Cpu className="meta-item-icon" size={14} />
             <div className="meta-item-details">
-              <span className="meta-item-label">{item.label}</span>
-              <span className="meta-item-value" title={item.value.toString()}>{item.value}</span>
+              <span className="meta-item-label">Camera Make</span>
+              <span className="meta-item-value" title={image.camera_make || 'N/A'}>
+                {image.camera_make || 'N/A'}
+              </span>
             </div>
           </div>
-        ))}
+          <div className="meta-item">
+            <Camera className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Camera Model</span>
+              <span className="meta-item-value" title={image.camera_model || 'N/A'}>
+                {image.camera_model || 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Exposure Settings */}
+      <div className="meta-section">
+        <h4 className="meta-section-title">
+          <Sliders size={12} /> Exposure Settings
+        </h4>
+        <div className="meta-grid">
+          <div className="meta-item">
+            <Info className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">ISO Speed</span>
+              <span className="meta-item-value" title={image.iso ? `ISO ${image.iso}` : 'N/A'}>
+                {image.iso ? `ISO ${image.iso}` : 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <Camera className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Aperture</span>
+              <span className="meta-item-value" title={image.aperture ? `f/${image.aperture}` : 'N/A'}>
+                {image.aperture ? `f/${image.aperture}` : 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <Info className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Shutter Speed</span>
+              <span className="meta-item-value" title={image.shutter_speed || 'N/A'}>
+                {image.shutter_speed || 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <Camera className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Focal Length</span>
+              <span className="meta-item-value" title={image.focal_length ? `${image.focal_length} mm` : 'N/A'}>
+                {image.focal_length ? `${image.focal_length} mm` : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. GPS Data */}
+      <div className="meta-section">
+        <h4 className="meta-section-title">
+          <MapPin size={12} /> GPS Data
+        </h4>
+        <div className="meta-grid">
+          <div className="meta-item">
+            <MapPin className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Latitude</span>
+              <span className="meta-item-value" title={image.latitude != null ? `${image.latitude.toFixed(6)}°` : 'N/A'}>
+                {image.latitude != null ? `${image.latitude.toFixed(6)}°` : 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <MapPin className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Longitude</span>
+              <span className="meta-item-value" title={image.longitude != null ? `${image.longitude.toFixed(6)}°` : 'N/A'}>
+                {image.longitude != null ? `${image.longitude.toFixed(6)}°` : 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <Compass className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Altitude</span>
+              <span className="meta-item-value" title={image.altitude != null ? `${image.altitude.toFixed(1)} m` : 'N/A'}>
+                {image.altitude != null ? `${image.altitude.toFixed(1)} m` : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. File Info */}
+      <div className="meta-section">
+        <h4 className="meta-section-title">
+          <ImageIcon size={12} /> File Info
+        </h4>
+        <div className="meta-grid">
+          <div className="meta-item">
+            <ImageIcon className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Resolution</span>
+              <span className="meta-item-value" title={resolution}>
+                {resolution}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <ImageIcon className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">File Size</span>
+              <span className="meta-item-value" title={formatFileSize(image.file_size)}>
+                {formatFileSize(image.file_size)}
+              </span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <Calendar className="meta-item-icon" size={14} />
+            <div className="meta-item-details">
+              <span className="meta-item-label">Date Taken</span>
+              <span className="meta-item-value" title={dateStr}>
+                {dateStr}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

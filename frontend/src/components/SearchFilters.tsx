@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw } from 'lucide-react';
 import { FilterParams } from '../types';
 
 interface SearchFiltersProps {
@@ -32,13 +32,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
   };
 
   return (
-    <div className="glass-panel filter-form">
-      <h3 className="filter-title">
-        <Filter size={18} className="text-cyan-400" /> Filters
-      </h3>
-      
+    <div className="filter-bar">
       {/* Text search */}
-      <div className="filter-group">
+      <div className="filter-group-inline search-group">
         <label className="filter-label" htmlFor="q">Search</label>
         <div style={{ position: 'relative' }}>
           <input
@@ -49,14 +45,14 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             onChange={handleChange}
             placeholder="Search filename or model..."
             className="input-text"
-            style={{ paddingLeft: '2.5rem' }}
+            style={{ paddingLeft: '2.2rem' }}
           />
           <Search 
-            size={16} 
+            size={14} 
             className="text-muted" 
             style={{ 
               position: 'absolute', 
-              left: '12px', 
+              left: '10px', 
               top: '50%', 
               transform: 'translateY(-50%)',
               color: 'var(--text-muted)' 
@@ -65,8 +61,10 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         </div>
       </div>
 
+      <div className="filter-divider"></div>
+
       {/* Camera Model filter */}
-      <div className="filter-group">
+      <div className="filter-group-inline model-group">
         <label className="filter-label" htmlFor="cameraModel">Camera Model</label>
         <select
           id="cameraModel"
@@ -82,53 +80,60 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         </select>
       </div>
 
+      <div className="filter-divider"></div>
+
       {/* Date taken range */}
-      <div className="filter-group">
-        <label className="filter-label">Date Taken Range</label>
-        <div className="date-range-row">
-          <div>
-            <input
-              type="date"
-              name="dateFrom"
-              value={filters.dateFrom}
-              onChange={handleChange}
-              className="input-text"
-              aria-label="Start Date"
-            />
-          </div>
-          <div>
-            <input
-              type="date"
-              name="dateTo"
-              value={filters.dateTo}
-              onChange={handleChange}
-              className="input-text"
-              aria-label="End Date"
-            />
-          </div>
-        </div>
+      <div className="filter-group-inline date-group">
+        <label className="filter-label" htmlFor="dateFrom">Date From</label>
+        <input
+          type="date"
+          id="dateFrom"
+          name="dateFrom"
+          value={filters.dateFrom}
+          onChange={handleChange}
+          className="input-text"
+          aria-label="Start Date"
+        />
       </div>
 
+      <div className="filter-group-inline date-group">
+        <label className="filter-label" htmlFor="dateTo">Date To</label>
+        <input
+          type="date"
+          id="dateTo"
+          name="dateTo"
+          value={filters.dateTo}
+          onChange={handleChange}
+          className="input-text"
+          aria-label="End Date"
+        />
+      </div>
+
+      <div className="filter-divider"></div>
+
       {/* Has GPS checkbox */}
-      <div className="filter-group" style={{ marginTop: '1.25rem' }}>
-        <label className="checkbox-label">
+      <div className="filter-group-inline" style={{ justifyContent: 'center', height: '100%', paddingLeft: '0.4rem' }}>
+        <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '100%', marginTop: '0.8rem' }}>
           <input
             type="checkbox"
             checked={filters.hasGps === 'true'}
             onChange={handleCheckboxChange}
             className="checkbox-custom"
           />
-          <span>Only show with GPS info</span>
+          <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>GPS ONLY</span>
         </label>
       </div>
 
+      <div className="filter-divider"></div>
+
       {/* Reset button */}
       <button 
-        className="btn btn-secondary" 
+        className="btn btn-secondary btn-sm" 
         onClick={onReset}
-        style={{ width: '100%', marginTop: '1rem' }}
+        style={{ marginLeft: 'auto' }}
+        title="Reset Filters"
       >
-        <RotateCcw size={16} /> Reset Filters
+        <RotateCcw size={12} /> Reset
       </button>
     </div>
   );

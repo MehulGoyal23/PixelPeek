@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { ImageMetadata } from '../types';
 
 interface UploadZoneProps {
@@ -97,7 +97,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, onError
 
   return (
     <div 
-      className={`glass-panel upload-zone ${dragActive ? 'drag-active' : ''}`}
+      className={`upload-zone ${dragActive ? 'drag-active' : ''}`}
       onDragEnter={handleDrag}
       onDragOver={handleDrag}
       onDragLeave={handleDrag}
@@ -114,28 +114,33 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, onError
         disabled={uploading}
       />
       
-      {uploading ? (
-        <>
-          <Loader2 className="upload-icon animate-spin" />
-          <div className="upload-title">Uploading image...</div>
-          <div className="upload-subtitle">{progress}% completed</div>
-          <div className="upload-progress-container">
-            <div 
-              className="upload-progress-bar" 
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </>
-      ) : (
-        <>
-          <Upload className="upload-icon" />
-          <div className="upload-title">Drag & drop your image here</div>
-          <div className="upload-subtitle">Supports JPG, PNG, TIFF, and WEBP up to 20MB</div>
-          <div className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-            <ImageIcon size={16} /> Choose File
-          </div>
-        </>
-      )}
+      <div className="upload-icon-wrapper">
+        {uploading ? (
+          <Loader2 className="animate-spin" size={18} />
+        ) : (
+          <Upload size={18} />
+        )}
+      </div>
+
+      <div className="upload-text-group">
+        {uploading ? (
+          <>
+            <div className="upload-title">Uploading...</div>
+            <div className="upload-subtitle">{progress}% completed</div>
+            <div className="upload-progress-container">
+              <div 
+                className="upload-progress-bar" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="upload-title">Upload Image</div>
+            <div className="upload-subtitle">Drag or click to choose</div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -14,7 +14,7 @@ from .database import Base, engine, get_db, SQLALCHEMY_DATABASE_URL, SessionLoca
 from .models import ImageMetadata
 from .schemas import ImageMetadataResponse, StegoDecodeRequest
 from .exif_utils import extract_exif
-from .stego_utils import scan_trailing_data, analyze_entropy, decode_lsb
+from .stego_utils import scan_trailing_data, analyze_entropy, decode_lsb, find_jpeg_eof
 from .attack_mapper import map_to_mitre
 
 # Create SQLite parent directories if needed
@@ -37,6 +37,21 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup_backfill_metadata():
+    # Database migration check
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            cursor = conn.execute(text("PRAGMA table_info(image_metadata)"))
+            columns = [row[1] for row in cursor]
+            if "stego_status" not in columns:
+                conn.execute(text("ALTER TABLE image_metadata ADD COLUMN stego_status VARCHAR"))
+                print("Migration: Added stego_status column to image_metadata.")
+            if "mitre_count" not in columns:
+                conn.execute(text("ALTER TABLE image_metadata ADD COLUMN mitre_count INTEGER DEFAULT 0"))
+                print("Migration: Added mitre_count column to image_metadata.")
+    except Exception as e:
+        print(f"Startup database migration error: {e}")
+
     db = SessionLocal()
     try:
         images = db.query(ImageMetadata).all()
@@ -56,9 +71,52 @@ def startup_backfill_metadata():
                         updated = True
                     except Exception as e:
                         print(f"Error backfilling metadata for {img.filename}: {e}")
+
+            # Check and backfill stego details
+            if img.stego_status is None:
+                local_path = os.path.join(base_dir, img.filepath.lstrip("/"))
+                if os.path.exists(local_path):
+                    try:
+                        trailing_result = scan_trailing_data(local_path)
+                        entropy_result = analyze_entropy(local_path)
+                        
+                        has_stego_detected = trailing_result["has_trailing_data"]
+                        has_stego_suspected = entropy_result["suspected"]
+                        
+                        status_str = "clean"
+                        if has_stego_detected:
+                            status_str = "detected"
+                        elif has_stego_suspected:
+                            status_str = "suspected"
+                            
+                        mitre_mappings = map_to_mitre({
+                            "trailing_data": trailing_result,
+                            "entropy": entropy_result
+                        })
+                        
+                        img.stego_status = status_str
+                        img.mitre_count = len(mitre_mappings)
+                        updated = True
+                    except Exception as e:
+                        print(f"Error backfilling stego status for {img.filename}: {e}")
+
+            # Check and correct GPS details if they were stored as 0.0 but are actually empty/invalid
+            if img.latitude == 0.0 and img.longitude == 0.0:
+                local_path = os.path.join(base_dir, img.filepath.lstrip("/"))
+                if os.path.exists(local_path):
+                    try:
+                        metadata = extract_exif(local_path)
+                        img.latitude = metadata.get("latitude")
+                        img.longitude = metadata.get("longitude")
+                        img.altitude = metadata.get("altitude")
+                        updated = True
+                        print(f"Corrected GPS coordinates for {img.filename} to: {img.latitude}, {img.longitude}")
+                    except Exception as e:
+                        print(f"Error correcting GPS coordinates for {img.filename}: {e}")
+
         if updated:
             db.commit()
-            print("Successfully backfilled EXIF metadata for existing images.")
+            print("Successfully backfilled metadata and stego info for existing images.")
     except Exception as e:
         print(f"Startup metadata migration error: {e}")
     finally:
@@ -125,6 +183,30 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     # Extract EXIF metadata
     metadata = extract_exif(filepath)
     
+    # Run stego analysis
+    try:
+        trailing_result = scan_trailing_data(filepath)
+        entropy_result = analyze_entropy(filepath)
+        has_stego_detected = trailing_result["has_trailing_data"]
+        has_stego_suspected = entropy_result["suspected"]
+        
+        status_str = "clean"
+        if has_stego_detected:
+            status_str = "detected"
+        elif has_stego_suspected:
+            status_str = "suspected"
+            
+        mitre_mappings = map_to_mitre({
+            "trailing_data": trailing_result,
+            "entropy": entropy_result
+        })
+        stego_status = status_str
+        mitre_count = len(mitre_mappings)
+    except Exception as e:
+        print(f"Error running stego analysis during upload: {e}")
+        stego_status = "clean"
+        mitre_count = 0
+
     # Create DB entry
     try:
         db_image = ImageMetadata(
@@ -144,6 +226,8 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
             latitude=metadata["latitude"],
             longitude=metadata["longitude"],
             altitude=metadata["altitude"],
+            stego_status=stego_status,
+            mitre_count=mitre_count,
         )
         
         db.add(db_image)
