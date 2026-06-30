@@ -75,17 +75,33 @@ You can run PixelPeek either with **Docker Compose** (recommended) or **locally*
    cd PixelPeek
    ```
 
-2. **Start the containers:**
+2. **Configure your environment variables (Crucial for Map rendering):**
+   Copy the frontend environment variable template to `.env` and set your Google Maps API Key:
+   ```bash
+   cd frontend
+   cp .env.example .env
+   ```
+   Open the newly created `frontend/.env` file and insert your API key:
+   ```env
+   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+   ```
+   Navigate back to the project root:
+   ```bash
+   cd ..
+   ```
+
+3. **Start the containers:**
    ```bash
    docker-compose up --build
    ```
+   *Note: This command copies the `frontend/.env` file inside the Docker build container to embed the API key directly into the compiled production bundle.*
 
-3. **Open in your browser:**
+4. **Open in your browser:**
 
-   | Service | URL |
-   |---|---|
-   | 🖥️ Frontend | [http://localhost:8080](http://localhost:8080) |
-   | 📄 API Docs (Swagger) | [http://localhost:8000/docs](http://localhost:8000/docs) |
+   | Service | Port / URL | Description |
+   |---|---|---|
+   | 🖥️ **Frontend Workstation** | [http://localhost:8080](http://localhost:8080) | The primary PixelPeek dark-mode UI. |
+   | 📄 **API Docs (Swagger)** | [http://localhost:8000/docs](http://localhost:8000/docs) | Interactive Swagger documentation for backend endpoints. |
 
 ---
 
@@ -157,6 +173,7 @@ You can run PixelPeek either with **Docker Compose** (recommended) or **locally*
    ```
 
    ✅ Frontend running at → [http://localhost:5173](http://localhost:5173)
+   *Note: In local development mode, the frontend dev server runs on port `5173` and proxies backend `/api` requests to port `8000`. (If you are running through Docker, the frontend runs on port `8080`).*
 
 ---
 
@@ -233,6 +250,22 @@ PixelPeek/
 | `VITE_GOOGLE_MAPS_API_KEY` | `frontend/.env` | Google Maps JavaScript API key for the interactive map |
 
 > 💡 Copy `frontend/.env.example` → `frontend/.env` and fill in your key.
+
+---
+
+## 🔍 Troubleshooting & FAQ
+
+### 1. The Google Map is blank or showing a "Page can't load Google Maps correctly" error.
+*   **API Key missing at build-time**: If running through Docker, the `frontend/.env` file containing `VITE_GOOGLE_MAPS_API_KEY` must exist **before** you run `docker-compose up --build`. If you created it after running the command, rebuild the frontend container using:
+    ```bash
+    docker-compose up -d --build frontend
+    ```
+*   **Invalid Key**: Ensure the API key in your `frontend/.env` file is valid and has the **Maps JavaScript API** enabled in the Google Cloud Console.
+
+### 2. Location recognition is showing `Latitude: N/A` for my uploaded images.
+*   **Missing EXIF Tags**: The image might not contain GPS geotags (e.g. photos downloaded from social media/chat platforms have their EXIF metadata automatically stripped).
+*   **No GPS lock**: If a photo is taken indoors or before the phone gets a GPS lock, the camera app writes `NaN` placeholders. PixelPeek's robust parser automatically identifies these and filters them out.
+*   **To Test**: Drag and drop the generated `test_geotagged.jpg` file (found at the root of the workspace) to verify that the coordinate parser and map rendering are functioning correctly.
 
 ---
 
